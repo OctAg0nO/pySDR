@@ -1401,13 +1401,16 @@ class SDR_GUI(QMainWindow):
         #vfo_in= self.P.sock.get_vfo()
         #print('RIG RETUNE ... vfo_in=',vfo_in)
 
-        if not self.P.sock:
+        P=self.P
+        sock = P.sock
+
+        if not sock:
             print('&&&&&&&&&&&&&&&& RIG_RETUNE: WARNING - No socket to rig &&&&&&&&&&&&&&&&&')
             return
         
         if self.follow_freq_cb.isChecked() or self.so2v_cb.isChecked():
             #print('RIG RETUNE: Following rig freq or so2v ...')
-            if not self.P.sock.active:
+            if not sock.active:
                 print('RIG_RETUNE 1: *** No connection to rig *** ')
                 self.follow_freq_cb.setChecked(False)
                 return
@@ -1416,17 +1419,17 @@ class SDR_GUI(QMainWindow):
             vfo='A'
             if self.so2v_cb.isChecked():
                 vfo='B'
-                self.P.sock.set_sub_dial(func='VFO-B')
+                sock.set_sub_dial(func='VFO-B')
 
             if self.split_cb.isChecked():
                 print('RIG RETUNE: Reading clarifier ...')
-                #df_rx,df_tx=self.P.sock.read_clarifier()
-                rit   = self.sock.rit(-1)
+                #df_rx,df_tx=sock.read_clarifier()
+                rit   = sock.rit(-1)
                 df_rx = rit[0]*rit[1]
-                xit   = self.sock.xit(-1)
+                xit   = sock.xit(-1)
                 df_tx = xit[0]*xit[1]
                 print('RIG RETUNE: Setting sub-dial ...')
-                self.P.sock.set_sub_dial(func='CLAR')
+                sock.set_sub_dial(func='CLAR')
                 if df_tx!=0:
                     df=df_tx
                 else:
@@ -1435,53 +1438,52 @@ class SDR_GUI(QMainWindow):
             else:
                 df=0
 
-            frq=(self.P.sock.get_freq(vfo) + df)*1e-3
+            frq=(sock.get_freq(vfo) + df)*1e-3
                 
             if frq>0 and np.abs(frq-fc)>=1e-3:
                 print("\n%%%%%%%%% RIG_RETUNE: RIG Center Frq=",frq,'\tSDR frq=',fc,'\tVFO=',vfo)
-                #print self.P.sock.freq,self.P.sock.mode,self.P.sock.connection
                 self.FreqSelect(frq,False,vfo)
                 
-                mode = self.P.sock.get_fldigi_mode()
-                rig_mode,bw = self.P.sock.get_mode()
-                if mode=='SSB' and (self.P.MODE=='LSB' or self.P.MODE=='USB'):
-                    mode=self.P.MODE
+                mode = sock.get_fldigi_mode()
+                rig_mode,bw = sock.get_mode()
+                if mode=='SSB' and (P.MODE=='LSB' or P.MODE=='USB'):
+                    mode=P.MODE
                 if len(mode)>0 and rig_mode!=mode:
-                    self.P.sock.set_mode(mode)
-                print('RIG_RETUNE: mode=',mode,'rig_mode=',rig_mode,'sdr_mode=',self.P.MODE)
+                    sock.set_mode(mode)
+                print('RIG_RETUNE: mode=',mode,'rig_mode=',rig_mode,'sdr_mode=',P.MODE)
 
         if self.follow_band_cb.isChecked():
             #print('RIG RETUNE - following rig band ...')
-            if not self.P.sock.active:
+            if not sock.active:
                 print('RIG_RETUNE 2: *** No connection to rig *** ')
                 self.follow_band_cb.setChecked(False)
                 return
             
             fc = self.lcd.get()
-            f = self.P.sock.get_freq()*1e-3
+            f = sock.get_freq()*1e-3
             band = freq2band(1e-3*f)
             band2 = freq2band(1e-3*fc)
             if f>0 and band!=band2:
-                mode = self.P.sock.get_fldigi_mode()
+                mode = sock.get_fldigi_mode()
                 if True:
                     frq=f
-                elif self.P.PAN_BW == 0:
+                elif P.PAN_BW == 0:
                     frq = (bands[b]["CW1"] + bands[b]["CW2"])/2
                 else:
-                    frq = bands[b]["CW1"] + self.P.PAN_BW/2000.
+                    frq = bands[b]["CW1"] + P.PAN_BW/2000.
                     
                 print('RIG_RETUNE: Follow band - rig band=',band,'\tSDR band=',band2,\
                       '\trig freq=',f,'\rnew SDR frq=',frq,'\trig mode=',mode)
                 if self.so2v_cb.isChecked():
                     self.FreqSelect(frq,True,'B')             # Tune VFO B on rig also
-                    self.P.sock.set_mode(mode,'B')
+                    sock.set_mode(mode,'B')
                 else:
                     self.FreqSelect(frq,False)                # Only tune the SDR frq
                 
-                self.P.sock.set_mode(mode)
-                print('mode=',mode,self.P.MODE)
+                sock.set_mode(mode)
+                print('mode=',mode,P.MODE)
 
-        #vfo_out= self.P.sock.get_vfo()
+        #vfo_out= sock.get_vfo()
         #print('RIG RETUNE out ... vfo_out=',vfo_out)
  
     # Function to set RF sampling rate
